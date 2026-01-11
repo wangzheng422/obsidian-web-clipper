@@ -1,4 +1,4 @@
-# Obsidian Web Clipper
+# Vault Web Clipper
 
 A Chrome Extension for clipping web pages (HTML and PDF) to Obsidian using the [Local REST API](https://github.com/coddingtonbear/obsidian-local-rest-api).
 
@@ -39,4 +39,4 @@ To create a `.zip` file for distribution:
 make zip
 ```
 
-This will create `obsidian-web-clipper.zip` in the root directory.
+This will create `vault-web-clipper.zip` in the root directory.

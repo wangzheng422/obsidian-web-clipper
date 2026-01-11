@@ -1,8 +1,8 @@
 .PHONY: zip clean
 
 zip:
-	rm -f obsidian-web-clipper.zip
-	zip -r obsidian-web-clipper.zip src -x "*.DS_Store"
+	rm -f vault-web-clipper.zip
+	zip -r vault-web-clipper.zip src -x "*.DS_Store"
 
 clean:
-	rm -f obsidian-web-clipper.zip
+	rm -f vault-web-clipper.zip

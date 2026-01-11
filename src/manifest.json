@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Obsidian Web Clipper",
+  "name": "Vault Web Clipper",
   "version": "1.0.0",
   "description": "Clip web pages and PDFs to Obsidian",
   "permissions": [
