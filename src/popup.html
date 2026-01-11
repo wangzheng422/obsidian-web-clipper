@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Obsidian Clipper</h1>
+    </header>
+    <main>
+      <div id="status" class="status">Initializing...</div>
+      
+      <div id="preview-area" class="hidden">
+        <input type="text" id="note-title" placeholder="Note Title">
+        <div class="preview-actions">
+           <button id="save-btn" class="primary-btn">Save to Obsidian</button>
+        </div>
+      </div>
+
+      <div id="settings-area">
+        <details>
+            <summary>Settings</summary>
+            <div class="settings-form">
+                <label>API Key: <input type="password" id="api-key"></label>
+                <label>Port: <input type="number" id="api-port" value="27123"></label>
+                <label>Base Folder: <input type="text" id="base-folder" value="Clippings"></label>
+                <button id="save-settings">Update Settings</button>
+            </div>
+        </details>
+      </div>
+    </main>
+  </div>
+  <script src="lib/turndown.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
