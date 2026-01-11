@@ -148,10 +148,16 @@ function handleParseResult(data) {
 // --- Save & Upload ---
 async function onSaveToObsidian() {
     if (!currentArticle) return;
-    updateStatus('Starting save process...');
 
-    // Disable button
-    document.getElementById('save-btn').disabled = true;
+    const saveBtn = document.getElementById('save-btn');
+    const titleInput = document.getElementById('note-title');
+    const originalBtnText = saveBtn.textContent;
+
+    // Lock UI
+    saveBtn.disabled = true;
+    titleInput.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    updateStatus('Starting save process...');
 
     try {
         const settings = await chrome.storage.local.get(['apiKey', 'port', 'baseFolder']);
@@ -174,7 +180,7 @@ async function onSaveToObsidian() {
         await createDirectoryIfNeeded(startApiKey, port, `${baseFolder}/assets/${year}/${month}`);
         await createDirectoryIfNeeded(startApiKey, port, assetPath);
 
-        const title = document.getElementById('note-title').value || 'Untitled';
+        const title = titleInput.value || 'Untitled';
         const safeTitle = title.replace(/[\\/:*?"<>|]/g, '-');
 
         if (currentArticle.isPdf) {
@@ -210,13 +216,24 @@ source: ${currentArticle.url}
 
             // 3. Download & Upload Images
             if (imagesToUpload.length > 0) {
-                updateStatus(`Processing ${imagesToUpload.length} images...`);
+                updateStatus(`Found ${imagesToUpload.length} images. Uploading...`);
+
                 for (let i = 0; i < imagesToUpload.length; i++) {
                     const img = imagesToUpload[i];
                     try {
-                        updateStatus(`Downloading image ${i + 1}/${imagesToUpload.length}...`);
-                        // Handle relative URLs for images
-                        const imgUrl = new URL(img.src, currentArticle.url).href;
+                        let imgUrl = img.src;
+                        // Handle relative URLs
+                        if (imgUrl.startsWith('//')) {
+                            imgUrl = 'https:' + imgUrl;
+                        } else if (imgUrl.startsWith('/')) {
+                            const urlObj = new URL(currentArticle.url);
+                            imgUrl = urlObj.origin + imgUrl;
+                        } else if (!imgUrl.startsWith('http')) {
+                            // complex relative path? skip for now or try base
+                            const urlObj = new URL(currentArticle.url);
+                            imgUrl = new URL(imgUrl, urlObj.origin).href;
+                        }
+
                         const blob = await fetchBlob(imgUrl);
 
                         updateStatus(`Uploading image ${i + 1}/${imagesToUpload.length}...`);
@@ -234,12 +251,17 @@ source: ${currentArticle.url}
         }
 
         updateStatus('Saved successfully!');
+        saveBtn.textContent = 'Saved!';
         setTimeout(() => window.close(), 1500);
 
     } catch (err) {
         console.error(err);
         updateStatus('Error: ' + err.message);
-        document.getElementById('save-btn').disabled = false;
+
+        // Unlock UI on error so user can retry
+        saveBtn.disabled = false;
+        titleInput.disabled = false;
+        saveBtn.textContent = originalBtnText;
     }
 }
 
