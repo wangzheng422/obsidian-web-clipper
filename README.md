@@ -8,7 +8,8 @@ A Chrome Extension for clipping web pages (HTML and PDF) to Obsidian using the [
 - **Offline Assets**: Downloads images and PDFs locally to your Obsidian vault.
 - **Structure**:
   - Markdown notes saved to `<BaseFolder>/` (default: `Clippings/`).
-  - Assets saved to `<BaseFolder>/assets/YYYY/MM/`.
+  - Assets saved to `<BaseFolder>/assets/YYYY/MM/DD/`.
+  - Uses YAML frontmatter for metadata (e.g., `source` URL).
 - **Configurable**: Set your API Key, Port, and Base Folder in extension settings.
 
 ## Prerequisites
