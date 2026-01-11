@@ -14,8 +14,26 @@ body {
 header {
   background-color: #7b2cbf;
   color: white;
-  padding: 10px;
-  text-align: center;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 5px;
+  width: auto;
+  line-height: 1;
+}
+
+.icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
 }
 
 h1 {
@@ -31,7 +49,9 @@ main {
   display: none;
 }
 
-input[type="text"], input[type="password"], input[type="number"] {
+input[type="text"],
+input[type="password"],
+input[type="number"] {
   width: 100%;
   padding: 8px;
   margin-bottom: 10px;

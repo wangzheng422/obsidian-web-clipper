@@ -42,33 +42,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsBtn = document.getElementById('save-settings');
 
     if (saveBtn) saveBtn.addEventListener('click', onSaveToObsidian);
-    if (settingsBtn) settingsBtn.addEventListener('click', onSaveSettings);
+
+    document.getElementById('open-settings').addEventListener('click', () => {
+        chrome.runtime.openOptionsPage();
+    });
 
     loadSettings();
-    scanCurrentTab();
+    // scanCurrentTab(); // Called in loadSettings if key exists
 });
 
 // --- Settings ---
 function loadSettings() {
     chrome.storage.local.get(['apiKey', 'port', 'baseFolder'], (result) => {
-        if (result.apiKey) document.getElementById('api-key').value = result.apiKey;
-        if (result.port) document.getElementById('api-port').value = result.port;
-        if (result.baseFolder) document.getElementById('base-folder').value = result.baseFolder;
-
         if (!result.apiKey) {
             updateStatus('Please configure Obsidian API settings.');
-            document.querySelector("details").open = true;
+            // Don't scan if no key
+        } else {
+            scanCurrentTab();
         }
-    });
-}
-
-function onSaveSettings() {
-    const apiKey = document.getElementById('api-key').value;
-    const port = document.getElementById('api-port').value;
-    const baseFolder = document.getElementById('base-folder').value;
-
-    chrome.storage.local.set({ apiKey, port, baseFolder }, () => {
-        updateStatus('Settings saved.');
     });
 }
 

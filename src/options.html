@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Vault Web Clipper - Settings & Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 40px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #7c3aed;
+        }
+
+        h2 {
+            font-size: 1.2em;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .help-text {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        button {
+            background-color: #7c3aed;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 25px;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #6d28d9;
+        }
+
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        .step {
+            background: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #7c3aed;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Welcome to Vault Web Clipper</h1>
+        <p>Follow these steps to connect the extension to your Obsidian vault.</p>
+
+        <div class="step">
+            <strong>Step 1: Install "Local REST API" in Obsidian</strong>
+            <p class="help-text">Go to Obsidian Settings > Community Plugins > Browse > Search "Local REST API" >
+                Install & Enable.</p>
+        </div>
+
+        <div class="step">
+            <strong>Step 2: Get your API Key</strong>
+            <p class="help-text">Go to Obsidian Settings > Community Plugins > Local REST API. Copy the API Key shown
+                there.</p>
+        </div>
+
+        <h2>Configuration</h2>
+        <label>API Key
+            <input type="password" id="api-key" placeholder="Paste your API Key here">
+        </label>
+
+        <label>Port
+            <input type="number" id="api-port" value="27123">
+            <div class="help-text">Default is 27123. Change only if you modified it in Obsidian.</div>
+        </label>
+
+        <label>Base Folder
+            <input type="text" id="base-folder" value="Clippings">
+            <div class="help-text">Where to save notes relative to your Vault root.</div>
+        </label>
+
+        <div id="status"></div>
+        <button id="save-settings">Save Settings</button>
+    </div>
+    <script src="options.js"></script>
+</body>
+
+</html>
