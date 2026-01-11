@@ -173,12 +173,14 @@ async function onSaveToObsidian() {
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
-        const assetPath = `${baseFolder}/assets/${year}/${month}`;
+        const day = String(now.getDate()).padStart(2, '0');
+        const assetPath = `${baseFolder}/assets/${year}/${month}/${day}`;
 
         // Ensure directories exist
         await createDirectoryIfNeeded(startApiKey, port, baseFolder);
         await createDirectoryIfNeeded(startApiKey, port, `${baseFolder}/assets`);
         await createDirectoryIfNeeded(startApiKey, port, `${baseFolder}/assets/${year}`);
+        await createDirectoryIfNeeded(startApiKey, port, `${baseFolder}/assets/${year}/${month}`);
         await createDirectoryIfNeeded(startApiKey, port, assetPath);
 
         const title = document.getElementById('note-title').value || 'Untitled';
@@ -194,7 +196,10 @@ async function onSaveToObsidian() {
             await uploadFile(startApiKey, port, `${assetPath}/${pdfFilename}`, pdfBlob);
 
             // Create Markdown Note
-            const markdownContent = `# ${title}\n\n![[${pdfFilename}]]\n\n[Original URL](${currentArticle.url})`;
+            const markdownContent = `---
+source: ${currentArticle.url}
+---
+![[${pdfFilename}]]`;
             await uploadFile(startApiKey, port, `${baseFolder}/${safeTitle}.md`, markdownContent);
 
         } else {
@@ -205,7 +210,11 @@ async function onSaveToObsidian() {
             let markdown = turndownService.turndown(currentArticle.content);
 
             // 2. Add frontmatter or header
-            const header = `# ${title}\n\nSource: [${currentArticle.url}](${currentArticle.url})\n\n---\n\n`;
+            const header = `---
+source: ${currentArticle.url}
+---
+
+`;
             markdown = header + markdown;
 
             // 3. Download & Upload Images
