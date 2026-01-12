@@ -3,6 +3,99 @@
 
 console.log('Obsidian Clipper Content Script Loaded');
 
+// ============================================================
+// GitHub-specific Content Extraction
+// ============================================================
+
+/**
+ * Check if current page is a GitHub issue, PR, or discussion
+ */
+function isGitHubIssueOrPR() {
+    const hostname = window.location.hostname;
+    const pathname = window.location.pathname;
+
+    if (hostname !== 'github.com') return false;
+
+    // Match: /owner/repo/issues/123 or /owner/repo/pull/123 or /owner/repo/discussions/123
+    return /^\/[^/]+\/[^/]+\/(issues|pull|discussions)\/\d+/.test(pathname);
+}
+
+/**
+ * Extract content from GitHub issue/PR/discussion pages
+ * Bypasses Readability which filters out elements with 'comment' in class names
+ */
+function extractGitHubContent() {
+    console.log('Attempting GitHub-specific extraction...');
+
+    // Extract issue/PR title
+    const titleEl = document.querySelector('.js-issue-title, .gh-header-title .markdown-title, [data-testid="issue-title"]');
+    const title = titleEl ? titleEl.textContent.trim() : document.title;
+
+    // Extract author
+    const authorEl = document.querySelector('.author, .gh-header-meta .author');
+    const author = authorEl ? authorEl.textContent.trim() : null;
+
+    // GitHub's new React-based UI uses these selectors:
+    // - Main issue body: .react-issue-body .markdown-body
+    // - Reply comments: .react-issue-comment .markdown-body
+    // Also try legacy selectors as fallback
+    const selectors = [
+        '.react-issue-body .markdown-body',           // New React: issue body
+        '.react-issue-comment .markdown-body',        // New React: comments
+        '.comment-body.markdown-body',                // Legacy: comment body
+        '.js-comment-body',                           // Legacy: JS comment body
+        '[data-testid="issue-body"] .markdown-body'   // Testid selector
+    ];
+
+    const commentBodies = document.querySelectorAll(selectors.join(', '));
+
+    if (commentBodies.length === 0) {
+        console.log('No GitHub comment bodies found, falling back to Readability');
+        return null;
+    }
+
+    console.log(`Found ${commentBodies.length} GitHub comments`);
+
+    // Build combined HTML
+    let combinedHtml = '<article class="github-issue-content">';
+
+    commentBodies.forEach((body, index) => {
+        // Try to get comment metadata (author, date) from parent containers
+        // Support both new React and legacy structures
+        const commentContainer = body.closest('.react-issue-comment, .react-issue-body, .timeline-comment, .js-comment-container, .TimelineItem');
+        let commentAuthor = '', commentDate = '';
+
+        if (commentContainer) {
+            const authorLink = commentContainer.querySelector('.author, [data-testid*="author"]');
+            const timeEl = commentContainer.querySelector('relative-time, time');
+            commentAuthor = authorLink ? authorLink.textContent.trim() : '';
+            commentDate = timeEl ? (timeEl.getAttribute('datetime') || timeEl.textContent) : '';
+        }
+
+        combinedHtml += `<section class="comment" data-index="${index}">`;
+        if (commentAuthor || commentDate) {
+            combinedHtml += `<p><strong>${commentAuthor}</strong> ${commentDate ? `- ${commentDate}` : ''}</p>`;
+        }
+        combinedHtml += body.innerHTML;
+        combinedHtml += '</section><hr/>';
+    });
+
+    combinedHtml += '</article>';
+
+    // Create text content for search/etc
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = combinedHtml;
+    const textContent = tempDiv.textContent || '';
+
+    console.log(`GitHub extraction successful: ${commentBodies.length} comments, ${textContent.length} chars`);
+
+    return { title, author, content: combinedHtml, textContent };
+}
+
+// ============================================================
+// Main Message Handler
+// ============================================================
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'PING') {
         sendResponse({ status: 'OK' });
@@ -22,7 +115,24 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return;
             }
 
-            // 2. HTML Parsing using Readability
+            // 2. GitHub-specific extraction (bypasses Readability)
+            if (isGitHubIssueOrPR()) {
+                const result = extractGitHubContent();
+                if (result) {
+                    sendResponse({
+                        isPdf: false,
+                        url: window.location.href,
+                        title: result.title,
+                        byline: result.author,
+                        content: result.content,
+                        textContent: result.textContent
+                    });
+                    return;
+                }
+                // If GitHub extraction failed, fall through to Readability
+            }
+
+            // 3. HTML Parsing using Readability (fallback)
             if (typeof Readability === 'undefined') {
                 sendResponse({ error: 'Readability library not loaded.' });
                 return;
