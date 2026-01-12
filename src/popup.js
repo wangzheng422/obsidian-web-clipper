@@ -1,6 +1,61 @@
 // Global state
 let currentArticle = null;
-let turndownService = new TurndownService();
+let turndownService = new TurndownService({
+    headingStyle: 'atx',          // Use # style headings
+    codeBlockStyle: 'fenced',     // Use ``` for code blocks
+    fence: '```',
+    emDelimiter: '*',
+    strongDelimiter: '**'
+});
+
+// Enable GFM plugin (tables, strikethrough, task lists, highlighted code blocks)
+if (typeof turndownPluginGfm !== 'undefined') {
+    turndownService.use(turndownPluginGfm.gfm);
+}
+
+// Enhanced GitHub code block rule - handles various language detection patterns
+turndownService.addRule('github-code-block', {
+    filter: function (node) {
+        return (
+            node.nodeName === 'PRE' &&
+            node.firstChild &&
+            (node.firstChild.nodeName === 'CODE' ||
+                node.querySelector('code') ||
+                node.classList.contains('highlight'))
+        );
+    },
+    replacement: function (content, node, options) {
+        // Try to find the code element
+        const codeEl = node.querySelector('code') || node.firstChild;
+        const codeText = codeEl ? codeEl.textContent : node.textContent;
+
+        // Try multiple ways to detect language
+        let language = '';
+
+        // 1. Check code element's class (language-xxx, highlight-source-xxx)
+        const codeClass = codeEl ? (codeEl.getAttribute('class') || '') : '';
+        const langMatch = codeClass.match(/(?:language-|highlight-(?:text|source)-)([^\s]+)/);
+        if (langMatch) language = langMatch[1];
+
+        // 2. Check parent pre's data-lang attribute
+        if (!language) {
+            language = node.getAttribute('data-lang') || '';
+        }
+
+        // 3. Check for GitHub's snippet-clipboard-content class with lang
+        if (!language) {
+            const parentDiv = node.closest('.highlight');
+            if (parentDiv) {
+                const parentClass = parentDiv.getAttribute('class') || '';
+                const highlightMatch = parentClass.match(/highlight-source-([^\s]+)/);
+                if (highlightMatch) language = highlightMatch[1];
+            }
+        }
+
+        return '\n\n' + options.fence + language + '\n' + codeText.replace(/\n$/, '') + '\n' + options.fence + '\n\n';
+    }
+});
+
 let imagesToUpload = []; // { src: string, filename: string, blob: Blob }
 
 // Configure Turndown
