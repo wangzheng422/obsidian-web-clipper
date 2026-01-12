@@ -139,6 +139,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
 
             const documentClone = document.cloneNode(true);
+
+            // Pre-process DOM to fix common extraction issues (e.g. WeChat)
+            preprocessDOM(documentClone);
+
             const article = new Readability(documentClone).parse();
 
             if (!article) {
@@ -165,3 +169,53 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     }
     return true; // Keep message channel open for async response
 });
+
+/**
+ * Pre-process DOM to handle site-specific quirks before Readability
+ */
+function preprocessDOM(doc) {
+    // 1. WeChat Images: use data-src if src is missing or placeholder
+    const images = doc.querySelectorAll('img');
+    images.forEach(img => {
+        const dataSrc = img.getAttribute('data-src');
+        if (dataSrc) {
+            img.src = dataSrc;
+            // Ensure format param is handled if present (WeChat often adds ?wx_fmt=xxx)
+            // But src usage typically handles query params fine.
+        }
+    });
+
+    // 2. WeChat Code Blocks: Fix nested spans and br tags in pre elements
+    // WeChat structure: pre > code > span[leaf] > br
+    const preElements = doc.querySelectorAll('pre');
+    preElements.forEach(pre => {
+        // Replace <br> with newlines
+        pre.querySelectorAll('br').forEach(br => br.replaceWith('\n'));
+
+        // Unwrap spans (simplify structure)
+        // We iterate backwards or just grab all spans
+        const spans = pre.querySelectorAll('span');
+        spans.forEach(span => {
+            // Replace span with its text content
+            const text = document.createTextNode(span.textContent);
+            span.replaceWith(text);
+        });
+    });
+
+    // 3. WeChat Tables: Fix nested structure in cells
+    // Structure: td > section > span[leaf]
+    const cells = doc.querySelectorAll('td, th');
+    cells.forEach(cell => {
+        // If cell has section/span structure, try to simplify
+        if (cell.querySelector('section') || cell.getAttribute('style')) {
+            // Simply grabbing textContent might lose some formatting, but for table cells, 
+            // we usually just want the text or simple inline elements.
+            // Let's try to unwrap sections specifically.
+            const sections = cell.querySelectorAll('section');
+            sections.forEach(sec => {
+                const text = document.createTextNode(sec.textContent);
+                sec.replaceWith(text);
+            });
+        }
+    });
+}
