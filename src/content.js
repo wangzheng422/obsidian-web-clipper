@@ -93,6 +93,83 @@ function extractGitHubContent() {
 }
 
 // ============================================================
+// Red Hat Access-specific Content Extraction
+// ============================================================
+
+/**
+ * Check if current page is a Red Hat Access Solution or Article
+ */
+function isRedHatAccess() {
+    const hostname = window.location.hostname;
+    return hostname === 'access.redhat.com' || hostname.endsWith('.redhat.com');
+}
+
+/**
+ * Extract content from Red Hat Access pages
+ */
+function extractRedHatContent() {
+    console.log('Attempting Red Hat Access specific extraction...');
+
+    // Extract title
+    // Usually in a separate header block, sometimes <h1> is inside .region-content
+    const titleEl = document.querySelector('h1#page-title, .field--name-title h1, h1');
+    const title = titleEl ? titleEl.textContent.trim() : document.title;
+
+    // Extract author/byline not typically prominent on solution pages, but maybe last updated
+    const lastUpdatedEl = document.querySelector('.field--name-changed-date');
+    const author = lastUpdatedEl ? `Last Updated: ${lastUpdatedEl.textContent.trim()}` : 'Red Hat';
+
+    // Content Container
+    // 'article.node-solution' or 'article.kcs_solution' seems to be the wrapper
+    // Also '.node-article' for knowledge base articles
+    const selectors = [
+        'article.kcs_solution',
+        'article.node-solution',
+        'article.node-article',
+        '.node-content',
+        'main#main-content'
+    ];
+
+    let contentEl = null;
+    for (const selector of selectors) {
+        contentEl = document.querySelector(selector);
+        if (contentEl) {
+            console.log(`Found content container: ${selector}`);
+            break;
+        }
+    }
+
+    if (!contentEl) {
+        console.log('No Red Hat content container found, falling back to Readability');
+        return null;
+    }
+
+    // Clone to manipulate
+    const clonedContent = contentEl.cloneNode(true);
+
+    // Clean up unwanted elements
+    // - Remove title if it's duplicated inside
+    // - Remove sharing buttons, tags, etc.
+    const junkSelectors = [
+        '.field--name-field-kcs-tags', // Tags
+        '.print-none',
+        '.star-rating',
+        '#feedback-form',
+        '.comments-section',
+        '.field--name-field-kcs-header' // often metadata we don't need in body
+    ];
+
+    junkSelectors.forEach(sel => {
+        clonedContent.querySelectorAll(sel).forEach(el => el.remove());
+    });
+
+    const contentHtml = clonedContent.innerHTML;
+    const textContent = clonedContent.textContent;
+
+    return { title, author, content: contentHtml, textContent };
+}
+
+// ============================================================
 // Main Message Handler
 // ============================================================
 
@@ -130,6 +207,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     return;
                 }
                 // If GitHub extraction failed, fall through to Readability
+            }
+
+            // 3. Red Hat Access extraction
+            if (isRedHatAccess()) {
+                const result = extractRedHatContent();
+                if (result) {
+                    sendResponse({
+                        isPdf: false,
+                        url: window.location.href,
+                        title: result.title,
+                        byline: result.author,
+                        content: result.content,
+                        textContent: result.textContent
+                    });
+                    return;
+                }
             }
 
             // 3. HTML Parsing using Readability (fallback)
