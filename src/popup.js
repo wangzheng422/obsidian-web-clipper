@@ -277,16 +277,12 @@ source: ${currentArticle.url}
                     const img = imagesToUpload[i];
                     try {
                         let imgUrl = img.src;
-                        // Handle relative URLs
-                        if (imgUrl.startsWith('//')) {
-                            imgUrl = 'https:' + imgUrl;
-                        } else if (imgUrl.startsWith('/')) {
-                            const urlObj = new URL(currentArticle.url);
-                            imgUrl = urlObj.origin + imgUrl;
-                        } else if (!imgUrl.startsWith('http')) {
-                            // complex relative path? skip for now or try base
-                            const urlObj = new URL(currentArticle.url);
-                            imgUrl = new URL(imgUrl, urlObj.origin).href;
+                        // Handle relative URLs by resolving against the page URL
+                        try {
+                            imgUrl = new URL(imgUrl, currentArticle.url).href;
+                        } catch (urlErr) {
+                            console.error('Failed to resolve image URL:', imgUrl, urlErr);
+                            // Continue with original URL if parsing fails
                         }
 
                         const blob = await fetchBlob(imgUrl);

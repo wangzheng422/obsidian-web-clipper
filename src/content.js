@@ -170,6 +170,63 @@ function extractRedHatContent() {
 }
 
 // ============================================================
+// Antora-specific Content Extraction (e.g. rhpds.github.io)
+// ============================================================
+
+/**
+ * Check if current page is an Antora-generated documentation site
+ */
+function isAntoraDoc() {
+    // Antora sites typically have a specific article.doc structure
+    // and often a .nav-container for the sidebar
+    return document.querySelector('article.doc') !== null &&
+        (document.querySelector('.nav-container') !== null || document.querySelector('.toolbar') !== null);
+}
+
+/**
+ * Extract content from Antora pages
+ */
+function extractAntoraContent() {
+    console.log('Attempting Antora specific extraction...');
+
+    const article = document.querySelector('article.doc');
+    if (!article) return null;
+
+    // Extract title
+    const titleEl = article.querySelector('h1');
+    const title = titleEl ? titleEl.textContent.trim() : document.title;
+
+    // Clone to manipulate
+    const clonedContent = article.cloneNode(true);
+
+    // Clean up unwanted elements
+    const junkSelectors = [
+        '.pagination',
+        'nav.page-navigation',
+        '.toc',
+        'footer',
+        '#preact-border-shadow-host' // Observed in research as a UI overlay
+    ];
+
+    junkSelectors.forEach(sel => {
+        clonedContent.querySelectorAll(sel).forEach(el => el.remove());
+    });
+
+    // Content HTML and Text
+    const contentHtml = clonedContent.innerHTML;
+    const textContent = clonedContent.textContent;
+
+    console.log(`Antora extraction successful: ${textContent.length} chars`);
+
+    return {
+        title,
+        author: 'Antora Doc',
+        content: contentHtml,
+        textContent
+    };
+}
+
+// ============================================================
 // Main Message Handler
 // ============================================================
 
@@ -225,7 +282,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
             }
 
-            // 3. HTML Parsing using Readability (fallback)
+            // 4. Antora-specific extraction
+            if (isAntoraDoc()) {
+                const result = extractAntoraContent();
+                if (result) {
+                    sendResponse({
+                        isPdf: false,
+                        url: window.location.href,
+                        title: result.title,
+                        byline: result.author,
+                        content: result.content,
+                        textContent: result.textContent
+                    });
+                    return;
+                }
+            }
+
+            // 5. HTML Parsing using Readability (fallback)
             if (typeof Readability === 'undefined') {
                 sendResponse({ error: 'Readability library not loaded.' });
                 return;
